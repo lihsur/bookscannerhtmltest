@@ -74,11 +74,19 @@
         resultsDiv.innerHTML = "<h2>Google Books Links:</h2>";
         bookTitles.forEach(title => {
           const query = encodeURIComponent(title);
+          // Uncomment and set your API key if needed:
+          // const apiKey = 'YOUR_API_KEY';
+          // const url = `https://www.googleapis.com/books/v1/volumes?q=${query}&key=${apiKey}`;
           const url = `https://www.googleapis.com/books/v1/volumes?q=${query}`;
 
+          console.log(`Fetching Google Books data for: ${title}`);
           fetch(url)
-            .then(response => response.json())
+            .then(response => {
+              console.log("Response status for", title, response.status);
+              return response.json();
+            })
             .then(data => {
+              console.log("Data for", title, data);
               let linkHTML = "No results found";
               if (data.totalItems > 0 && data.items && data.items.length > 0) {
                 const infoLink = data.items[0].volumeInfo.infoLink || "Link not available";
@@ -100,4 +108,5 @@
   </script>
 </body>
 </html>
+
 
