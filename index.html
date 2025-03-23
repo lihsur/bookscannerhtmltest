@@ -64,6 +64,9 @@
       outputDiv.innerHTML = "";
       outputDiv.appendChild(imgElement);
 
+      // Print the iteration message before proceeding
+      resultsDiv.innerHTML += "<p><strong>Iteration #2</strong></p>";
+
       // Create an Image element to use for resizing
       const imgForResize = new Image();
       imgForResize.src = URL.createObjectURL(file);
@@ -93,8 +96,8 @@
             outputDiv.innerHTML += "<h2>Detected Book Titles:</h2><ul>" +
               bookTitles.map(title => `<li>${title}</li>`).join('') + "</ul>";
 
-            // Query the Google Books API for each title with iteration numbers
-            resultsDiv.innerHTML = "<h2>Google Books Links:</h2>";
+            // Query the Google Books API for each title with iteration numbers for clarity
+            resultsDiv.innerHTML += "<h2>Google Books Links:</h2>";
             bookTitles.forEach((title, index) => {
               const iterationNumber = index + 1;
               resultsDiv.innerHTML += `<p>Iteration #${iterationNumber}: Processing "${title}"...</p>`;
@@ -126,6 +129,7 @@
   </script>
 </body>
 </html>
+
 
 
 
