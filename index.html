@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Shelf Scanner</title>
-  <!-- You can include your Tesseract.js or other scripts here if needed -->
+  <!-- Tesseract.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
   <style>
     /* Global Reset */
     * {
@@ -175,7 +176,6 @@
       <li><a href="#">Home</a></li>
       <li><a href="#">About</a></li>
       <li><a href="#">Contact</a></li>
-      <li><a href="#">Help</a></li>
     </ul>
   </nav>
 
@@ -197,22 +197,7 @@
         <h2>Scanned Books</h2>
       </div>
       <div class="books-list" id="booksList">
-        <!-- Example Book Cards (Static for now) -->
-        <div class="book-card">
-          <h3>The Great Gatsby</h3>
-          <div class="author">by F. Scott Fitzgerald</div>
-          <p>A novel set in the Roaring Twenties, exploring themes of wealth, society, and the American Dream.</p>
-        </div>
-        <div class="book-card">
-          <h3>1984</h3>
-          <div class="author">by George Orwell</div>
-          <p>A dystopian novel that delves into the dangers of totalitarianism and extreme political ideology.</p>
-        </div>
-        <div class="book-card">
-          <h3>To Kill a Mockingbird</h3>
-          <div class="author">by Harper Lee</div>
-          <p>A profound novel about racial injustice and childhood innocence set in the American South.</p>
-        </div>
+        <!-- Book cards will appear here dynamically -->
       </div>
     </div>
   </div>
@@ -223,26 +208,107 @@
     <a href="#">Terms of Service</a>
   </footer>
 
-  <!-- Optional: Add your Tesseract or OCR logic here -->
+  <!-- Main Script: OCR + Google Books Logic -->
   <script>
-    const scanButton = document.getElementById('scanButton');
     const shelfImage = document.getElementById('shelfImage');
+    const scanButton = document.getElementById('scanButton');
     const booksList = document.getElementById('booksList');
 
-    // Placeholder click event for "Scan Shelf" button
-    scanButton.addEventListener('click', () => {
-      // In your real implementation, you would:
-      // 1. Read the uploaded file from shelfImage
-      // 2. Perform OCR using Tesseract.js or your chosen library
-      // 3. Parse the results
-      // 4. Fetch data from Google Books API
-      // 5. Dynamically update the "booksList" section
+    // Simple filter to remove obviously invalid lines
+    function filterBookTitles(lines) {
+      return lines.filter(line => line.length > 3 && /[A-Za-z]/.test(line));
+    }
 
-      alert('Scan Shelf clicked. Add your OCR + Google Books logic here!');
+    // Create a book-card div from the Google Books data
+    function createBookCard(bookInfo) {
+      // Safely handle missing data
+      const title = bookInfo.title || "Unknown Title";
+      const authors = (bookInfo.authors && bookInfo.authors.join(", ")) || "Unknown Author";
+      const description = bookInfo.description || "No description available.";
+
+      const card = document.createElement('div');
+      card.classList.add('book-card');
+
+      card.innerHTML = `
+        <h3>${title}</h3>
+        <div class="author">by ${authors}</div>
+        <p>${description}</p>
+      `;
+      return card;
+    }
+
+    // Handle the click of "Scan Shelf" button
+    scanButton.addEventListener('click', async () => {
+      const file = shelfImage.files[0];
+      if (!file) {
+        alert("Please upload an image first.");
+        return;
+      }
+
+      // Clear previous results
+      booksList.innerHTML = "";
+
+      // Show a "scanning" message
+      const loadingMessage = document.createElement('p');
+      loadingMessage.textContent = "Scanning... Please wait.";
+      booksList.appendChild(loadingMessage);
+
+      try {
+        // 1. Perform OCR using Tesseract.js
+        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+          logger: m => console.log("Tesseract log:", m)
+        });
+        
+        // Remove the "scanning" message
+        booksList.removeChild(loadingMessage);
+
+        // 2. Split text into lines & filter
+        const rawLines = text.split('\n').map(line => line.trim()).filter(line => line);
+        const potentialTitles = filterBookTitles(rawLines);
+
+        // If no lines are detected, show a message
+        if (potentialTitles.length === 0) {
+          const noTitlesMsg = document.createElement('p');
+          noTitlesMsg.textContent = "No potential book titles detected.";
+          booksList.appendChild(noTitlesMsg);
+          return;
+        }
+
+        // 3. For each potential title, call Google Books API
+        for (let i = 0; i < potentialTitles.length; i++) {
+          const titleLine = potentialTitles[i];
+          // Attempt to find the book in Google Books
+          const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(titleLine)}`
+          );
+          const data = await response.json();
+
+          if (data.totalItems > 0 && data.items) {
+            // Take the first match
+            const volumeInfo = data.items[0].volumeInfo;
+            // Create and append a book card
+            const card = createBookCard(volumeInfo);
+            booksList.appendChild(card);
+          } else {
+            // If no results found, show a fallback card
+            const fallbackCard = document.createElement('div');
+            fallbackCard.classList.add('book-card');
+            fallbackCard.innerHTML = `
+              <h3>${titleLine}</h3>
+              <p>No results found in Google Books.</p>
+            `;
+            booksList.appendChild(fallbackCard);
+          }
+        }
+      } catch (err) {
+        console.error("Error during OCR or book lookup:", err);
+        booksList.innerHTML = "<p>Something went wrong. Check console logs for details.</p>";
+      }
     });
   </script>
 </body>
 </html>
+
 
 
 
