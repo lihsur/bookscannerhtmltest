@@ -2,133 +2,248 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bookshelf OCR & Google Books Search</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shelf Scanner</title>
+  <!-- You can include your Tesseract.js or other scripts here if needed -->
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    img { max-width: 400px; display: block; margin-bottom: 10px; }
-    .section { margin-bottom: 30px; }
+    /* Global Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Navigation Bar */
+    nav {
+      background-color: #fff;
+      border-bottom: 1px solid #ccc;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    nav .logo {
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #333;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.5rem;
+    }
+    nav ul li a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+    }
+    nav ul li a:hover {
+      color: #007bff;
+    }
+
+    /* Main Container */
+    .container {
+      display: flex;
+      flex: 1;
+      padding: 2rem;
+      gap: 2rem;
+    }
+
+    /* Left Column: Upload & Button */
+    .left-column {
+      flex: 1;
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .left-column h2 {
+      margin-bottom: 1rem;
+    }
+    .upload-box {
+      width: 100%;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .upload-box input[type="file"] {
+      display: block;
+      margin: 1rem auto;
+    }
+    .scan-button {
+      background-color: #ff6600;
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .scan-button:hover {
+      background-color: #e55b00;
+    }
+
+    /* Right Column: Scanned Books */
+    .right-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .scanned-header {
+      background-color: #fff;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .scanned-header h2 {
+      margin: 0;
+    }
+    .books-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .book-card {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .book-card h3 {
+      margin-bottom: 0.25rem;
+    }
+    .book-card .author {
+      color: #666;
+      font-style: italic;
+      margin-bottom: 0.5rem;
+    }
+    .book-card p {
+      line-height: 1.4;
+      color: #555;
+    }
+
+    /* Footer */
+    footer {
+      background-color: #fff;
+      border-top: 1px solid #ccc;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    footer a {
+      text-decoration: none;
+      color: #333;
+      font-size: 0.9rem;
+    }
+    footer a:hover {
+      color: #007bff;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Upload Bookshelf Image</h1>
-  <input type="file" id="imageUpload" accept="image/*" />
-  <div id="output" class="section"></div>
-  <div id="results" class="section"></div>
+  <!-- Navigation -->
+  <nav>
+    <div class="logo">Shelf Scanner</div>
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">About</a></li>
+      <li><a href="#">Contact</a></li>
+      <li><a href="#">Help</a></li>
+    </ul>
+  </nav>
 
-  <!-- Include Tesseract.js from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Left Column -->
+    <div class="left-column">
+      <h2>Upload Your Shelf Image</h2>
+      <div class="upload-box">
+        <span>Drag & drop or browse your file</span>
+        <input type="file" id="shelfImage" accept="image/*" />
+      </div>
+      <button class="scan-button" id="scanButton">Scan Shelf</button>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-column">
+      <div class="scanned-header">
+        <h2>Scanned Books</h2>
+      </div>
+      <div class="books-list" id="booksList">
+        <!-- Example Book Cards (Static for now) -->
+        <div class="book-card">
+          <h3>The Great Gatsby</h3>
+          <div class="author">by F. Scott Fitzgerald</div>
+          <p>A novel set in the Roaring Twenties, exploring themes of wealth, society, and the American Dream.</p>
+        </div>
+        <div class="book-card">
+          <h3>1984</h3>
+          <div class="author">by George Orwell</div>
+          <p>A dystopian novel that delves into the dangers of totalitarianism and extreme political ideology.</p>
+        </div>
+        <div class="book-card">
+          <h3>To Kill a Mockingbird</h3>
+          <div class="author">by Harper Lee</div>
+          <p>A profound novel about racial injustice and childhood innocence set in the American South.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms of Service</a>
+  </footer>
+
+  <!-- Optional: Add your Tesseract or OCR logic here -->
   <script>
-    // Utility function to filter potential book titles
-    function filterBookTitles(textLines) {
-      return textLines.filter(line => line.length > 3 && /[A-Za-z]/.test(line));
-    }
+    const scanButton = document.getElementById('scanButton');
+    const shelfImage = document.getElementById('shelfImage');
+    const booksList = document.getElementById('booksList');
 
-    // Resize image using a canvas to speed up OCR
-    function resizeImage(image, maxDimension = 800) {
-      const canvas = document.createElement('canvas');
-      let width = image.width;
-      let height = image.height;
+    // Placeholder click event for "Scan Shelf" button
+    scanButton.addEventListener('click', () => {
+      // In your real implementation, you would:
+      // 1. Read the uploaded file from shelfImage
+      // 2. Perform OCR using Tesseract.js or your chosen library
+      // 3. Parse the results
+      // 4. Fetch data from Google Books API
+      // 5. Dynamically update the "booksList" section
 
-      // Resize proportionally if either dimension is greater than maxDimension
-      if (width > height && width > maxDimension) {
-        height = Math.round(height * maxDimension / width);
-        width = maxDimension;
-      } else if (height >= width && height > maxDimension) {
-        width = Math.round(width * maxDimension / height);
-        height = maxDimension;
-      }
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(image, 0, 0, width, height);
-      return new Promise((resolve) => {
-        canvas.toBlob(blob => resolve(blob), 'image/jpeg');
-      });
-    }
-
-    document.getElementById('imageUpload').addEventListener('change', function(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const outputDiv = document.getElementById('output');
-      const resultsDiv = document.getElementById('results');
-      
-      // Reset previous output
-      outputDiv.innerHTML = "<p>Processing image, please wait...</p>";
-      resultsDiv.innerHTML = "";
-
-      // Display the uploaded image
-      const imgElement = document.createElement('img');
-      imgElement.src = URL.createObjectURL(file);
-      outputDiv.innerHTML = "";
-      outputDiv.appendChild(imgElement);
-
-      // Print the iteration message before proceeding
-      resultsDiv.innerHTML += "<p><strong>Iteration #2</strong></p>";
-
-      // Create an Image element to use for resizing
-      const imgForResize = new Image();
-      imgForResize.src = URL.createObjectURL(file);
-      imgForResize.onload = () => {
-        // Resize image to reduce OCR processing time
-        resizeImage(imgForResize, 800).then(resizedBlob => {
-          // Start OCR using Tesseract on the resized image blob
-          Tesseract.recognize(resizedBlob, 'eng', {
-            logger: m => console.log("Tesseract log:", m)
-          })
-          .then(({ data: { text } }) => {
-            console.log("OCR extracted text:", text);
-            if (!text.trim()) {
-              outputDiv.innerHTML += "<p>No text was detected in the image.</p>";
-              return;
-            }
-            // Display raw OCR text
-            outputDiv.innerHTML += "<h2>Extracted Text:</h2><pre>" + text + "</pre>";
-
-            // Split text into lines and filter for likely book titles
-            const lines = text.split('\n').map(line => line.trim()).filter(line => line !== "");
-            const bookTitles = filterBookTitles(lines);
-            if (bookTitles.length === 0) {
-              outputDiv.innerHTML += "<p>No potential book titles detected.</p>";
-              return;
-            }
-            outputDiv.innerHTML += "<h2>Detected Book Titles:</h2><ul>" +
-              bookTitles.map(title => `<li>${title}</li>`).join('') + "</ul>";
-
-            // Query the Google Books API for each title with iteration numbers for clarity
-            resultsDiv.innerHTML += "<h2>Google Books Links:</h2>";
-            bookTitles.forEach((title, index) => {
-              const iterationNumber = index + 1;
-              resultsDiv.innerHTML += `<p>Iteration #${iterationNumber}: Processing "${title}"...</p>`;
-              const query = encodeURIComponent(title);
-              const url = `https://www.googleapis.com/books/v1/volumes?q=${query}`;
-              fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                  let linkHTML = "No results found";
-                  if (data.totalItems > 0 && data.items && data.items.length > 0) {
-                    const infoLink = data.items[0].volumeInfo.infoLink || "Link not available";
-                    linkHTML = `<a href="${infoLink}" target="_blank">${infoLink}</a>`;
-                  }
-                  resultsDiv.innerHTML += `<p><strong>Iteration #${iterationNumber} - ${title}</strong>: ${linkHTML}</p>`;
-                })
-                .catch(error => {
-                  console.error('Error querying Google Books API for title "' + title + '":', error);
-                  resultsDiv.innerHTML += `<p><strong>Iteration #${iterationNumber} - ${title}</strong>: Error querying API</p>`;
-                });
-            });
-          })
-          .catch(err => {
-            console.error("OCR Error:", err);
-            outputDiv.innerHTML += "<p>Error during OCR: " + err.message + "</p>";
-          });
-        });
-      };
+      alert('Scan Shelf clicked. Add your OCR + Google Books logic here!');
     });
   </script>
 </body>
 </html>
+
 
 
 
