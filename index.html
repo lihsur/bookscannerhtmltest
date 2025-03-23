@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bookshelf OCR & Google Books Search</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    img { max-width: 400px; display: block; margin-bottom: 10px; }
+    .section { margin-bottom: 30px; }
+  </style>
+</head>
+<body>
+  <h1>Upload Bookshelf Image</h1>
+  <input type="file" id="imageUpload" accept="image/*" />
+  <div id="output" class="section"></div>
+  <div id="results" class="section"></div>
+
+  <!-- Include Tesseract.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+  <script>
+    // Utility function to filter potential book titles
+    function filterBookTitles(textLines) {
+      return textLines.filter(line => line.length > 3 && /[A-Za-z]/.test(line));
+    }
+
+    // Listen for file uploads
+    document.getElementById('imageUpload').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const outputDiv = document.getElementById('output');
+      outputDiv.innerHTML = "<p>Processing image, please wait...</p>";
+
+      // Display the uploaded image
+      const imgElement = document.createElement('img');
+      imgElement.src = URL.createObjectURL(file);
+      outputDiv.innerHTML = "";
+      outputDiv.appendChild(imgElement);
+
+      // Perform OCR using Tesseract.js
+      Tesseract.recognize(file, 'eng', {
+        logger: m => console.log(m)
+      }).then(({ data: { text } }) => {
+        // Show raw OCR text
+        outputDiv.innerHTML += "<h2>Extracted Text:</h2><pre>" + text + "</pre>";
+
+        // Split the text into lines and filter them for likely book titles
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line !== "");
+        const bookTitles = filterBookTitles(lines);
+
+        outputDiv.innerHTML += "<h2>Detected Book Titles:</h2><ul>" +
+          bookTitles.map(title => `<li>${title}</li>`).join('') + "</ul>";
+
+        // Query the Google Books API for each title
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = "<h2>Google Books Links:</h2>";
+
+        bookTitles.forEach(title => {
+          const query = encodeURIComponent(title);
+          const url = `https://www.googleapis.com/books/v1/volumes?q=${query}`;
+
+          fetch(url)
+            .then(response => response.json())
+            .then(data => {
+              let linkHTML = "No results found";
+              if (data.totalItems > 0 && data.items && data.items.length > 0) {
+                const infoLink = data.items[0].volumeInfo.infoLink || "Link not available";
+                linkHTML = `<a href="${infoLink}" target="_blank">${infoLink}</a>`;
+              }
+              resultsDiv.innerHTML += `<p><strong>${title}</strong>: ${linkHTML}</p>`;
+            })
+            .catch(error => {
+              console.error('Error querying Google Books API:', error);
+              resultsDiv.innerHTML += `<p><strong>${title}</strong>: Error querying API</p>`;
+            });
+        });
+      }).catch(err => {
+        outputDiv.innerHTML += "<p>Error during OCR: " + err.message + "</p>";
+      });
+    });
+  </script>
+</body>
+</html>
